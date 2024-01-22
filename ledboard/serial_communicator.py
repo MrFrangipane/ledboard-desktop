@@ -1,52 +1,68 @@
 import struct
 import time
-
 import serial
 
 
 class SerialProtocol:
+    """
+    Typical message
+
+    - 0   begin (1 byte)
+    - 1   command (1 byte)
+    - 2   data type (1 byte)
+    - 3   data length (4 bytes)
+    - 7   data (n bytes)
+    - n+7 end (1 byte)
+    """
     class DataType:
-        INT = 0x30  # 0
-        FLOAT = 0x31  # 1
+        StructTest = 0x30  # "0""
 
-    beginFlag = 0x3c  # <
-    endFlag = 0x3e  # >
-    temperature = 0x41  # A
+    flag_begin_command = 0x3c  # "<"
+    flag_begin_data = 0x7c  # "|"
+    flag_end = 0x3e  # ">""
+
+    response_ok = 0x21  # "!"
+
+    command_A = 0x41  # "A"
+    command_B = 0x42  # "B"
+    command_C = 0x43  # "C"
+    command_D = 0x44  # "D"
+    command_E = 0x45  # "E"
+    command_F = 0x46  # "F"
+    command_G = 0x47  # "G"
+    command_H = 0x48  # "H"
 
 
-def r(serialPort, fmt="<if"):
-    received = serialPort.read(struct.calcsize(fmt))
+def r(serial_port, fmt="<if"):
+    received = serial_port.read(struct.calcsize(fmt))
     return struct.unpack(fmt, received)
 
 
 if __name__ == '__main__':
-    serial_port = serial.Serial()
-    serial_port.baudrate = 115200
-    serial_port.dtr = True  # TODO: check if need on linux ?
-    serial_port.port = "COM13"
-    serial_port.open()
+    arduino_port = serial.Serial()
+    arduino_port.baudrate = 115200
+    arduino_port.dtr = True  # TODO: check if need on linux ?
+    arduino_port.port = "COM13"
+    arduino_port.open()
 
-    print(serial_port)
+    print(arduino_port)
 
     i = 0
     while True:
-        serial_port.write(struct.pack('<if', i, 7.75))
+        data = struct.pack('<iif', struct.calcsize('<if'), i, i * 0.33)
+        message = (bytearray([
+            SerialProtocol.flag_begin_command,
+            SerialProtocol.command_A,
+            SerialProtocol.DataType.StructTest
+        ]))
+        message += data
+        message += bytearray([SerialProtocol.flag_end])
 
-        if serial_port.in_waiting > 0:
-            print(" >", i)
-            print("someCountingStruct", r(serial_port))
-            print("someReceivingStruct", r(serial_port))
+        arduino_port.write(message)
 
-            i += 1
+        response = arduino_port.read(1)[0]
+        if response == SerialProtocol.response_ok:
+            print(f"OK f: {i * 0.33} i: {i}")
 
+        i += 1
         time.sleep(1)
-
-    # values = bytearray([
-    #     SerialProtocol.beginFlag,
-    #     SerialProtocol.temperature,
-    #     SerialProtocol.DataType.FLOAT
-    # ])
-    # values += struct.pack('if', 13, 0.5)
-    # values += bytearray([
-    #     SerialProtocol.endFlag
-    # ])
