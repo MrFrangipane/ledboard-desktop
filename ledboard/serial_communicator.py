@@ -1,41 +1,25 @@
 import struct
 import time
 import serial
+from binascii import hexlify
 
 
 class SerialProtocol:
     """
-    Typical message
+    Message topology
 
-    - 0   begin (1 byte)
-    - 1   command (1 byte)
-    - 2   data type (1 byte)
-    - 3   data length (4 bytes)
-    - 7   data (n bytes)
-    - n+7 end (1 byte)
+    ```
+    |   0   |       1      | 2 | 3 | 4 | 5 |   n  | 6 + n |
+    | begin | message type |   data size   | data |  end  |
+    |-------|           header             | data |-------|
+    ```
     """
-    class DataType:
-        StructTest = 0x30  # "0""
+    class MessageType:
+        response_ok = 0x41      # "A"
+        get_board_info = 0x42   # "B"
 
-    flag_begin_command = 0x3c  # "<"
-    flag_begin_data = 0x7c  # "|"
-    flag_end = 0x3e  # ">""
-
-    response_ok = 0x21  # "!"
-
-    command_A = 0x41  # "A"
-    command_B = 0x42  # "B"
-    command_C = 0x43  # "C"
-    command_D = 0x44  # "D"
-    command_E = 0x45  # "E"
-    command_F = 0x46  # "F"
-    command_G = 0x47  # "G"
-    command_H = 0x48  # "H"
-
-
-def r(serial_port, fmt="<if"):
-    received = serial_port.read(struct.calcsize(fmt))
-    return struct.unpack(fmt, received)
+    flag_begin = 0x3c   # "<"
+    flag_end = 0x3e     # ">""
 
 
 if __name__ == '__main__':
@@ -50,19 +34,22 @@ if __name__ == '__main__':
     i = 0
     while True:
         data = struct.pack('<iif', struct.calcsize('<if'), i, i * 0.33)
-        message = (bytearray([
-            SerialProtocol.flag_begin_command,
-            SerialProtocol.command_A,
-            SerialProtocol.DataType.StructTest
-        ]))
-        message += data
-        message += bytearray([SerialProtocol.flag_end])
+        message = bytearray([
+            SerialProtocol.flag_begin,
+            SerialProtocol.MessageType.get_board_info,
+        ]) + data + bytearray([SerialProtocol.flag_end])
+
+        print(f"f: {i * 0.33} i: {i}")
 
         arduino_port.write(message)
 
-        response = arduino_port.read(1)[0]
-        if response == SerialProtocol.response_ok:
-            print(f"OK f: {i * 0.33} i: {i}")
+        time.sleep(0.1)
+
+        response = bytearray()
+        while arduino_port.in_waiting > 0:
+            response += arduino_port.read(1)
+
+        print(hexlify(response, sep=" "))
 
         i += 1
-        time.sleep(1)
+        time.sleep(0)
