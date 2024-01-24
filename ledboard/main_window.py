@@ -1,14 +1,17 @@
 import logging
 
 import cv2
-from PySide6.QtCore import Qt, QTimer
-from PySide6.QtGui import QImage, QPixmap
-from PySide6.QtWidgets import QLabel, QApplication, QMainWindow, QGridLayout, QWidget, QGraphicsView, QGraphicsScene, QPushButton, QProgressBar, QCheckBox
+from PySide6.QtCore import QTimer, QRectF
+from PySide6.QtGui import QImage, QPixmap, QBrush, QColor, QPen
+from PySide6.QtWidgets import (QLabel, QApplication, QMainWindow, QGridLayout, QWidget,
+                               QGraphicsScene, QPushButton, QProgressBar, QCheckBox,
+                               QGraphicsRectItem)
 from pyside6helpers.slider import Slider
 from pyside6helpers.spinbox import SpinBox
 from pyside6helpers.group import make_group
 
 from ledboard.analyzer import Analyzer
+from ledboard.graphics_view import GraphicsView
 
 _logger = logging.getLogger(__name__)
 
@@ -24,7 +27,6 @@ _logger = logging.getLogger(__name__)
 
 
 class MainWindow(QMainWindow):
-    _viewport_scale = 0.5
     _locator_radius = 3
 
     def __init__(self):
@@ -35,11 +37,12 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("LED Board")
         self.setGeometry(100, 100, 1280, 720)
 
-        self.view = QGraphicsView(self)
-        self.view.scale(self._viewport_scale, self._viewport_scale)
         self.scene = QGraphicsScene(self)
-        self.pixmap_item = self.scene.addPixmap(QPixmap())
+        self.view = GraphicsView(self)
         self.view.setScene(self.scene)
+
+        self._item_image = self.scene.addPixmap(QPixmap())
+        self._items_locators = dict()
 
         self.spin_led_start = SpinBox(
             name="First LED",
@@ -101,22 +104,22 @@ class MainWindow(QMainWindow):
             group_test_led
         ])
 
+        self.progress = QProgressBar()
+
         self.button_scan = QPushButton("Scan...")
         self.button_scan.setFixedWidth(250)
         self.button_scan.clicked.connect(self.button_scan_clicked)
-
-        self.progress = QProgressBar()
 
         self.central_widget = QWidget(self)
         self.setCentralWidget(self.central_widget)
 
         self.layout = QGridLayout(self.central_widget)
-        self.layout.addWidget(self.view, 0, 0, 4, 1)
+        self.layout.addWidget(make_group("Video", [self.view]), 0, 0, 4, 1)
 
         self.layout.addWidget(group_parameters, 0, 1)
-        self.layout.addWidget(self.button_scan, 1, 1)
 
-        self.layout.addWidget(self.progress, 2, 1)
+        self.layout.addWidget(self.progress, 1, 1)
+        self.layout.addWidget(self.button_scan, 2, 1)
 
         self.layout.addWidget(QWidget(), 3, 1)
         self.layout.setRowStretch(3, 100)
@@ -130,12 +133,26 @@ class MainWindow(QMainWindow):
 
     def scan(self):
         if not self._analyzer.is_working:
+            for locator in self._items_locators.values():
+                self.scene.removeItem(locator)
+            self._items_locators = dict()
+
             self._analyzer.begin_analysis()
 
         while self._analyzer.is_working:
             QApplication.processEvents()
-            current_step = self._analyzer.analyze_step()
-            self.progress.setValue(current_step - self._analyzer.led_start)
+            current_led_index = self._analyzer.analyze_step()
+
+            # TODO create a class to manage locators
+            if current_led_index not in self._items_locators and current_led_index > 0:
+                x = self._analyzer.locators[current_led_index][0] - self._locator_radius / 2
+                y = self._analyzer.locators[current_led_index][1] - self._locator_radius / 2
+                rect = QGraphicsRectItem(QRectF(x, y, self._locator_radius, self._locator_radius))
+                rect.setPen(QPen(QColor.fromRgb(255, 0, 0)))
+                self._items_locators[current_led_index] = rect
+                self.scene.addItem(rect)
+
+            self.progress.setValue(current_led_index - self._analyzer.led_start)
 
         self.progress.setValue(0)
         self.button_scan.setText("Scan...")
@@ -175,10 +192,7 @@ class MainWindow(QMainWindow):
         else:
             image = self._analyzer.capture_blurred_image()
 
-        for loc in self._analyzer.led_coords:
-            cv2.circle(image, loc, self._locator_radius, (0, 0, 255), -1)
-
-        self.pixmap_item.setPixmap(self._frame_to_pixmap(image))
+        self._item_image.setPixmap(self._frame_to_pixmap(image))
 
     @staticmethod
     def _frame_to_pixmap(frame: cv2.Mat) -> QPixmap:

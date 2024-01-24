@@ -1,3 +1,5 @@
+import json
+
 import cv2
 from PySide6.QtCore import QThread
 from PySide6.QtWidgets import QApplication
@@ -24,7 +26,7 @@ class Analyzer:
         self._background_image = None
         self._current_led_index = -1
 
-        self.led_coords = list()
+        self.locators = dict()
 
         self.HAHA = 0
 
@@ -42,14 +44,14 @@ class Analyzer:
         self._wait_for_light_off()
 
         maximum_value, maximum_location = self._wait_for_light_on()
-        self.led_coords.append(maximum_location)
+        self.locators[self._current_led_index] = maximum_location
         self._current_led_index += 1
 
         if self._current_led_index > self.led_end:
             self.end_analysis()
             return -1
 
-        return self._current_led_index
+        return self._current_led_index - 1
 
     def illuminate(self, led_index: int) -> None:
         self._led_board.connect()
@@ -92,7 +94,7 @@ class Analyzer:
     def begin_analysis(self):
         self.is_working = True
         self._current_led_index = self.led_start
-        self.led_coords = list()
+        self.locators = dict()
 
         self._led_board.connect()
         self._led_board.illuminate(-1, 0)
@@ -104,5 +106,8 @@ class Analyzer:
     def end_analysis(self):
         self.is_working = False
         self._current_led_index = -1
+
+        with open("../analysis.json", "w+") as analysis_file:
+            json.dump(self.locators, analysis_file, indent=2)
 
         self._led_board.disconnect()
