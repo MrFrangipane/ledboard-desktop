@@ -5,7 +5,7 @@ from PySide6.QtCore import QTimer, QRectF, QSettings, Qt
 from PySide6.QtGui import QImage, QPixmap, QBrush, QColor, QPen
 from PySide6.QtWidgets import (QLabel, QApplication, QMainWindow, QGridLayout, QWidget,
                                QGraphicsScene, QPushButton, QProgressBar, QCheckBox,
-                               QGraphicsRectItem, QComboBox, QRadioButton)
+                               QGraphicsRectItem, QComboBox, QRadioButton, QScrollArea)
 from pyside6helpers.slider import Slider
 from pyside6helpers.spinbox import SpinBox
 from pyside6helpers.group import make_group
@@ -37,11 +37,22 @@ class MainWindow(QMainWindow):
         self._combo_serial_ports.currentIndexChanged.connect(self._combo_serial_port_changed)
 
         self._radio_pixel_type_rgb = QRadioButton("RGB")
-        self._radio_pixel_type_rgb.toggled.connect(self._radio_pixel_type_rgb_toggled)
+        self._radio_pixel_type_rgb.toggled.connect(self._pixel_configuration_changed)
+
         self._radio_pixel_type_rgbw = QRadioButton("RGBW")
-        group_pixel_type = make_group(title="Pixel Type", widgets=[
+
+        self._spin_pixel_count = SpinBox(
+            name="count (x8)",
+            minimum=1,
+            maximum=300,
+            value=60,
+            on_value_changed=self._pixel_configuration_changed
+        )
+
+        group_pixel_type = make_group(title="Pixels", widgets=[
             self._radio_pixel_type_rgb,
-            self._radio_pixel_type_rgbw
+            self._radio_pixel_type_rgbw,
+            self._spin_pixel_count
         ])
 
         group_devices = make_group(title="Devices", widgets=[
@@ -132,19 +143,24 @@ class MainWindow(QMainWindow):
         self.button_scan.setFixedWidth(250)
         self.button_scan.clicked.connect(self.button_scan_clicked)
 
+        side_widget = QWidget()
+        side_layout = QGridLayout(side_widget)
+        side_layout.addWidget(group_devices, 0, 0)
+        side_layout.addWidget(group_parameters, 1, 0)
+        side_layout.addWidget(self.progress, 2, 0)
+        side_layout.addWidget(self.button_scan, 3, 0)
+
+        scroll = QScrollArea()
+        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        scroll.setWidget(side_widget)
+
         self.central_widget = QWidget(self)
         self.setCentralWidget(self.central_widget)
 
         self.layout = QGridLayout(self.central_widget)
-        self.layout.addWidget(make_group("Video", [self.view]), 0, 0, 5, 1)
+        self.layout.addWidget(make_group("Video", [self.view]), 0, 0)
+        self.layout.addWidget(scroll, 0, 1)
 
-        self.layout.addWidget(group_devices, 0, 1)
-        self.layout.addWidget(group_parameters, 1, 1)
-        self.layout.addWidget(self.progress, 2, 1)
-        self.layout.addWidget(self.button_scan, 3, 1)
-
-        self.layout.addWidget(QWidget(), 4, 1)
-        self.layout.setRowStretch(4, 100)
         self.layout.setColumnStretch(0, 100)
 
         self._viewport_timer = QTimer(self)
@@ -209,9 +225,12 @@ class MainWindow(QMainWindow):
             self._analyzer.set_led_board_port(self._combo_serial_ports.currentText())
             self.save_settings()
 
-    @error_reported("Pixel Type change")
-    def _radio_pixel_type_rgb_toggled(self, value):
-        self._analyzer.set_pixel_type(int(self._radio_pixel_type_rgbw.isChecked()))
+    @error_reported("Pixel Configuration change")
+    def _pixel_configuration_changed(self, value):
+        pixel_type = int(self._radio_pixel_type_rgbw.isChecked())
+        pixel_count = self._spin_pixel_count.value()
+        self._analyzer.set_configuration(pixel_type, pixel_count)
+        self.save_settings()
 
     def _set_analysis_parameters(self):
         self._analyzer.blur_radius = self.slider_blur_radius.value()
@@ -251,6 +270,7 @@ class MainWindow(QMainWindow):
         settings.setValue("camera_index", self._combo_cameras.currentIndex())
         settings.setValue("port_name", self._combo_serial_ports.currentText())
         settings.setValue("pixel_type", self._radio_pixel_type_rgbw.isChecked())
+        settings.setValue("pixel_count", self._spin_pixel_count.value())
 
     def load_settings(self):
         settings = QSettings("Frangitron", "LEDBoard")
@@ -261,3 +281,4 @@ class MainWindow(QMainWindow):
         is_rgbw = settings.value("pixel_type", None, type=bool)
         self._radio_pixel_type_rgb.setChecked(not is_rgbw)
         self._radio_pixel_type_rgbw.setChecked(is_rgbw)
+        self._spin_pixel_count.setValue(settings.value("pixel_count", None, type=int))

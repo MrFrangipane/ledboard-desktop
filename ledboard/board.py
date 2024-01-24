@@ -26,10 +26,13 @@ class LedBoard:
             )
         )
 
-    def configure(self, pixel_type: int):
+    def configure(self, pixel_type: int, pixel_count: int):
         self.serial_communicator.send(
             SerialProtocol.MessageType.configure,
-            SerialProtocol.Configuration(pixel_type=pixel_type)
+            SerialProtocol.Configuration(
+                pixel_type=pixel_type,
+                pixel_count=pixel_count
+            )
         )
 
     @staticmethod

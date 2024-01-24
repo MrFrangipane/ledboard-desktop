@@ -117,9 +117,9 @@ class Analyzer:
         print(f"Set port {port_name}")
         self._led_board.set_serial_port_name(port_name)
 
-    def set_pixel_type(self, pixel_type: int):
+    def set_configuration(self, pixel_type: int, pixel_count: int):
         if self._led_board.connect():
-            self._led_board.configure(pixel_type)
+            self._led_board.configure(pixel_type, pixel_count)
             self._led_board.disconnect()
 
     def camera_ready(self):

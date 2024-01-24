@@ -30,6 +30,7 @@ class SerialProtocol:
     @dataclass
     class Configuration:
         pixel_type: int = 0
+        pixel_count: int = 60
 
     message_type_to_data_type = {
         MessageType.illuminate: IlluminatedLed,
