@@ -11,14 +11,22 @@ class SerialCommunicator:
         self.serial_port.baudrate = 115200
         self.serial_port.dtr = True  # TODO: check if needed on linux ?
         self.serial_port.port = port
+        self._is_open = False
 
     def connect(self):
-        self.serial_port.open()
+        if not self._is_open:
+            self.serial_port.open()
+            self._is_open = True
 
     def disconnect(self):
-        self.serial_port.close()
+        if self._is_open:
+            self.serial_port.close()
+            self._is_open = False
 
     def send(self, message_type, message_data):
+        if not self._is_open:
+            return
+
         packed = self._pack(message_data)
         message = bytearray([SerialProtocol.flag_begin, message_type])
         message += packed
@@ -26,6 +34,9 @@ class SerialCommunicator:
         self.serial_port.write(message)
 
     def receive(self):
+        if not self._is_open:
+            return
+
         response = bytearray()
         while self.serial_port.in_waiting > 0:
             response += self.serial_port.read()

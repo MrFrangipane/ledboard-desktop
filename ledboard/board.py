@@ -1,10 +1,12 @@
+from serial.serialutil import SerialException
+
 from ledboard.serial_.communicator import SerialCommunicator
 from ledboard.serial_.protocol import SerialProtocol
 
 
 class LedBoard:
-    def __init__(self):
-        self.serial_communicator = SerialCommunicator(port="COM13")
+    def __init__(self, port):
+        self.serial_communicator = SerialCommunicator(port=port)
 
     def connect(self):
         self.serial_communicator.connect()
