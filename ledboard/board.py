@@ -8,8 +8,8 @@ class LedBoard:
     def __init__(self):
         self.serial_communicator = SerialCommunicator()
 
-    def connect(self):
-        self.serial_communicator.connect()
+    def connect(self) -> bool:
+        return self.serial_communicator.connect()
 
     def disconnect(self):
         self.serial_communicator.disconnect()

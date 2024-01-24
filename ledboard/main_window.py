@@ -52,9 +52,9 @@ class MainWindow(QMainWindow):
 
         self._analyzer = Analyzer()
         self.load_settings()
-        #
-        # self._combo_cameras_changed(self._combo_cameras.currentIndex())
-        # self._combo_serial_port_changed(self._combo_serial_ports.currentIndex())
+        # fixme called twice if settings not 0 indexes
+        self._combo_cameras_changed(self._combo_cameras.currentIndex())
+        self._combo_serial_port_changed(self._combo_serial_ports.currentIndex())
 
         self.setWindowTitle("LED Board")
         self.setGeometry(100, 100, 1280, 720)
@@ -227,6 +227,9 @@ class MainWindow(QMainWindow):
             self._analyzer.illuminate(self.slider_test_led_index.value())
 
     def _update_viewport(self):
+        if not self._analyzer.camera_ready():
+            return
+
         if self._analyzer.is_working:
             image = self._analyzer.viewport_image
         else:

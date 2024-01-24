@@ -52,9 +52,9 @@ class Analyzer:
         return self._current_led_index - 1
 
     def illuminate(self, led_index: int) -> None:
-        self._led_board.connect()
-        self._led_board.illuminate(led_index, self.brightness)
-        self._led_board.disconnect()
+        if self._led_board.connect():
+            self._led_board.illuminate(led_index, self.brightness)
+            self._led_board.disconnect()
 
     def _wait_for_light_on(self) -> [int, int]:
         self._led_board.illuminate(self._current_led_index, self.brightness)
@@ -114,9 +114,13 @@ class Analyzer:
         self._camera.open(index)
 
     def set_led_board_port(self, port_name):
+        print(f"Set port {port_name}")
         self._led_board.set_serial_port_name(port_name)
 
     def set_pixel_type(self, pixel_type: int):
-        self._led_board.connect()
-        self._led_board.configure(pixel_type)
-        self._led_board.disconnect()
+        if self._led_board.connect():
+            self._led_board.configure(pixel_type)
+            self._led_board.disconnect()
+
+    def camera_ready(self):
+        return self._camera._capture is not None

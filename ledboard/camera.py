@@ -1,4 +1,5 @@
 import logging
+import sys
 
 import imageio
 from imageio.core.format import Format
@@ -17,7 +18,8 @@ class Camera:
         self._capture = imageio.get_reader(f'<video{index}>')
 
     def read(self):
-        return self._capture.get_next_data()
+        if self._capture is not None:
+            return self._capture.get_next_data()
 
     @staticmethod
     def get_camera_names():

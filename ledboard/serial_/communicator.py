@@ -21,6 +21,9 @@ class SerialCommunicator:
         self.disconnect()
 
     def connect(self):
+        if self._name is None:
+            return False
+
         if not self._is_open:
             self._serial_port = serial.Serial()
             self._serial_port.baudrate = 115200
@@ -28,6 +31,8 @@ class SerialCommunicator:
             self._serial_port.port = self._name
             self._serial_port.open()
             self._is_open = True
+
+        return True
 
     def disconnect(self):
         if self._is_open:
