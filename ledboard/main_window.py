@@ -1,29 +1,22 @@
 import logging
 
 import cv2
-from PySide6.QtCore import QTimer, QRectF
+from PySide6.QtCore import QTimer, QRectF, QSettings, Qt
 from PySide6.QtGui import QImage, QPixmap, QBrush, QColor, QPen
 from PySide6.QtWidgets import (QLabel, QApplication, QMainWindow, QGridLayout, QWidget,
                                QGraphicsScene, QPushButton, QProgressBar, QCheckBox,
-                               QGraphicsRectItem)
+                               QGraphicsRectItem, QComboBox)
 from pyside6helpers.slider import Slider
 from pyside6helpers.spinbox import SpinBox
 from pyside6helpers.group import make_group
+from pyside6helpers.error_reporting import error_reported
 
 from ledboard.analyzer import Analyzer
+from ledboard.camera import Camera
+from ledboard.board import LedBoard
 from ledboard.graphics_view import GraphicsView
 
 _logger = logging.getLogger(__name__)
-
-
-# def save_settings(self, camera_index):
-#     settings = QSettings("Frangitron", "LEDBoard")
-#     settings.setValue("camera_index", camera_index)
-#
-#
-# def load_settings(self):
-#     settings = QSettings("Frangitron", "LEDBoard")
-#     return settings.value("camera_index", None, type=int)
 
 
 class MainWindow(QMainWindow):
@@ -32,7 +25,27 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
 
-        self._analyzer = Analyzer(ledboard_port="COM13", camera_index=4)
+        #
+        # FIXME create configuration classes
+        self._combo_cameras = QComboBox()
+        self._combo_cameras.addItems(Camera.get_camera_names())
+
+        self._combo_serial_ports = QComboBox()
+        self._combo_serial_ports.addItems(LedBoard.get_serial_port_names())
+
+        self.load_settings()
+        self._combo_cameras.currentIndexChanged.connect(self._combo_cameras_changed)
+        self._combo_serial_ports.currentIndexChanged.connect(self._combo_serial_port_changed)
+
+        group_devices = make_group(title="Devices", widgets=[
+            self._combo_cameras,
+            self._combo_serial_ports
+        ])
+
+        self._analyzer = Analyzer()
+
+        self._combo_cameras_changed(self._combo_cameras.currentIndex())
+        self._combo_serial_port_changed(self._combo_serial_ports.currentIndex())
 
         self.setWindowTitle("LED Board")
         self.setGeometry(100, 100, 1280, 720)
@@ -114,15 +127,15 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(self.central_widget)
 
         self.layout = QGridLayout(self.central_widget)
-        self.layout.addWidget(make_group("Video", [self.view]), 0, 0, 4, 1)
+        self.layout.addWidget(make_group("Video", [self.view]), 0, 0, 5, 1)
 
-        self.layout.addWidget(group_parameters, 0, 1)
+        self.layout.addWidget(group_devices, 0, 1)
+        self.layout.addWidget(group_parameters, 1, 1)
+        self.layout.addWidget(self.progress, 2, 1)
+        self.layout.addWidget(self.button_scan, 3, 1)
 
-        self.layout.addWidget(self.progress, 1, 1)
-        self.layout.addWidget(self.button_scan, 2, 1)
-
-        self.layout.addWidget(QWidget(), 3, 1)
-        self.layout.setRowStretch(3, 100)
+        self.layout.addWidget(QWidget(), 4, 1)
+        self.layout.setRowStretch(4, 100)
         self.layout.setColumnStretch(0, 100)
 
         self._viewport_timer = QTimer(self)
@@ -173,6 +186,18 @@ class MainWindow(QMainWindow):
         self._analyzer.end_analysis()
         super().closeEvent(event)
 
+    @error_reported("Camera change")
+    def _combo_cameras_changed(self, index):
+        if index >= 0:
+            self._analyzer.set_camera_index(index)
+            self.save_settings()
+
+    @error_reported("Serial Port change")
+    def _combo_serial_port_changed(self, index):
+        if index >= 0:
+            self._analyzer.set_led_board_port(self._combo_serial_ports.currentText())
+            self.save_settings()
+
     def _set_analysis_parameters(self):
         self._analyzer.blur_radius = self.slider_blur_radius.value()
         self._analyzer.brightness = self.slider_led_brightness.value()
@@ -200,3 +225,15 @@ class MainWindow(QMainWindow):
         bytes_per_line = 3 * width
         qt_image = QImage(frame.data, width, height, bytes_per_line, QImage.Format_RGB888)
         return QPixmap.fromImage(qt_image)
+
+    def save_settings(self):
+        settings = QSettings("Frangitron", "LEDBoard")
+        settings.setValue("camera_index", self._combo_cameras.currentIndex())
+        settings.setValue("port_name", self._combo_serial_ports.currentText())
+
+    def load_settings(self):
+        settings = QSettings("Frangitron", "LEDBoard")
+        self._combo_cameras.setCurrentIndex(settings.value("camera_index", None, type=int))
+        self._combo_serial_ports.setCurrentIndex(self._combo_serial_ports.findText(
+            settings.value("port_name", None, type=str)
+        ))

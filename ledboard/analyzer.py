@@ -10,7 +10,7 @@ from ledboard.board import LedBoard
 
 class Analyzer:
 
-    def __init__(self, ledboard_port, camera_index):
+    def __init__(self):
         self.blur_radius = 12
         self.brightness = 15
         self.comparison_light_on_threshold = 100
@@ -20,15 +20,13 @@ class Analyzer:
         self.led_end = 100
         self.viewport_image = None
 
-        self._camera = Camera(camera_index)
-        self._led_board = LedBoard(ledboard_port)
+        self._camera = Camera()
+        self._led_board = LedBoard()
 
         self._background_image = None
         self._current_led_index = -1
 
         self.locators = dict()
-
-        self.HAHA = 0
 
     def capture_blurred_image(self):
         image = self._camera.read()
@@ -111,3 +109,9 @@ class Analyzer:
             json.dump(self.locators, analysis_file, indent=2)
 
         self._led_board.disconnect()
+
+    def set_camera_index(self, index):
+        self._camera.open(index)
+
+    def set_led_board_port(self, port_name):
+        self._led_board.set_serial_port_name(port_name)

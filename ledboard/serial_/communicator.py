@@ -6,21 +6,29 @@ from .protocol import SerialProtocol
 
 
 class SerialCommunicator:
-    def __init__(self, port):
-        self.serial_port = serial.Serial()
-        self.serial_port.baudrate = 115200
-        self.serial_port.dtr = True  # TODO: check if needed on linux ?
-        self.serial_port.port = port
+    def __init__(self):
+        self._serial_port: serial.Serial = None
         self._is_open = False
+        self._name = None
+
+    def set_port_name(self, name):
+        self.disconnect()
+        self._name = name
+        self.connect()
+        self.disconnect()
 
     def connect(self):
         if not self._is_open:
-            self.serial_port.open()
+            self._serial_port = serial.Serial()
+            self._serial_port.baudrate = 115200
+            self._serial_port.dtr = True
+            self._serial_port.port = self._name
+            self._serial_port.open()
             self._is_open = True
 
     def disconnect(self):
         if self._is_open:
-            self.serial_port.close()
+            self._serial_port.close()
             self._is_open = False
 
     def send(self, message_type, message_data):
@@ -31,15 +39,15 @@ class SerialCommunicator:
         message = bytearray([SerialProtocol.flag_begin, message_type])
         message += packed
         message += bytearray([SerialProtocol.flag_end])
-        self.serial_port.write(message)
+        self._serial_port.write(message)
 
     def receive(self):
         if not self._is_open:
             return
 
         response = bytearray()
-        while self.serial_port.in_waiting > 0:
-            response += self.serial_port.read()
+        while self._serial_port.in_waiting > 0:
+            response += self._serial_port.read()
 
         if len(response) == 0:
             return
