@@ -12,8 +12,11 @@ class SerialCommunicator:
         self.serial_port.dtr = True  # TODO: check if needed on linux ?
         self.serial_port.port = port
 
-    def begin(self):
+    def connect(self):
         self.serial_port.open()
+
+    def disconnect(self):
+        self.serial_port.close()
 
     def send(self, message_type, message_data):
         packed = self._pack(message_data)
@@ -27,11 +30,12 @@ class SerialCommunicator:
         while self.serial_port.in_waiting > 0:
             response += self.serial_port.read()
 
-        dataclass = {
-            SerialProtocol.MessageType.responseBoardInfo: SerialProtocol.BoardInfo
-        }[response[1]]
+        if len(response) == 0:
+            return
+
+        dataclass = SerialProtocol.message_type_to_data_type[response[1]]
         packing_format = self._make_packing_format(dataclass)
-        data = struct.unpack("<" + packing_format, response[6:-1])
+        data = struct.unpack("<" + packing_format, response[SerialProtocol.header_size + 1:-1])
 
         result = dataclass()
         index = 0
@@ -40,7 +44,7 @@ class SerialCommunicator:
                 setattr(result, field.name, data[index])
                 index += 1
             elif field.type == float:
-                setattr(result, field.name, data[index])  # fixme TEST ME
+                setattr(result, field.name, data[index])
                 index += 1
             elif field.type == str:
                 value = "".join([b.decode() for b in data[index: index + len(field.default)]])

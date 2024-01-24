@@ -1,6 +1,6 @@
 import logging
 
-import cv2
+import imageio
 from PySide6.QtCore import QSettings
 
 
@@ -24,22 +24,8 @@ class Camera:
             self.detect()
 
     def check_capture(self):
-        capture = cv2.VideoCapture(self._index)
-
-        if capture.isOpened():
-            _logger.info(f"Checking camera {self._index}")
-
-            ret, frame = capture.read()
-            if ret:
-                _logger.info("Frame captured successfully")
-                self._capture = capture
-                return True
-
-            else:
-                _logger.warning("Failed to capture a frame. Closing the camera")
-                capture.release()
-
-        return False
+        self._capture = imageio.get_reader(f'<video{self._index}>')
+        return True
 
     def detect(self):
         for camera_index in range(0, 10):
@@ -59,7 +45,4 @@ class Camera:
         self._index = settings.value("camera_index", None, type=int)
 
     def read(self):
-        return self._capture.read()
-
-    def release(self):
-        return self._capture.release()
+        return self._capture.get_next_data()

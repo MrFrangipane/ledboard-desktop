@@ -12,20 +12,22 @@ class SerialProtocol:
     ```
     """
     class MessageType:
-        response_ok = 0x41          # "A"
-        get_board_info = 0x42       # "B"
-        responseBoardInfo = 0x43    # "C"
+        illuminate = 0x41               # "A"
+        board_info_get = 0x42           # "B"
+        board_info_get_response = 0x43  # "C"
 
     @dataclass
-    class StructTest:
-        some_int: int = 0
-        some_float: float = 0.0
+    class IlluminatedLed:
+        led_index: int = 0
+        r: int = 0
+        g: int = 0
+        b: int = 0
+        w: int = 0
 
-    @dataclass
-    class BoardInfo:
-        board_version: int = 0
-        id_address: str = "000.000.000.000"
-        temperature: float = 0.0
+    message_type_to_data_type = {
+        MessageType.illuminate: IlluminatedLed
+    }
 
+    header_size = 5
     flag_begin = 0x3c   # "<"
-    flag_end = 0x3e     # ">""
+    flag_end = 0x3e     # ">"
