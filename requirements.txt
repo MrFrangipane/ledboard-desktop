@@ -3,3 +3,4 @@ imageio-ffmpeg
 opencv-python
 PySide6
 pyside6-helpers
+pyserial
