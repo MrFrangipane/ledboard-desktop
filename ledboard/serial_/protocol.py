@@ -13,8 +13,7 @@ class SerialProtocol:
     """
     class MessageType:
         illuminate = 0x41               # "A"
-        board_info_get = 0x42           # "B"
-        board_info_get_response = 0x43  # "C"
+        configure = 0x42                # "B"
 
     @dataclass
     class IlluminatedLed:
@@ -24,8 +23,17 @@ class SerialProtocol:
         b: int = 0
         w: int = 0
 
+    class PixelType:
+        RGB = 0
+        RGBW = 1
+
+    @dataclass
+    class Configuration:
+        pixel_type: int = 0
+
     message_type_to_data_type = {
-        MessageType.illuminate: IlluminatedLed
+        MessageType.illuminate: IlluminatedLed,
+        MessageType.configure: Configuration
     }
 
     header_size = 5

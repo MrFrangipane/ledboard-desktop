@@ -17,7 +17,19 @@ class LedBoard:
     def illuminate(self, led_index, brightness):
         self.serial_communicator.send(
             SerialProtocol.MessageType.illuminate,
-            SerialProtocol.IlluminatedLed(led_index=led_index, w=brightness)
+            SerialProtocol.IlluminatedLed(
+                led_index=led_index,
+                r=brightness,
+                g=brightness,
+                b=brightness,
+                w=brightness
+            )
+        )
+
+    def configure(self, pixel_type: int):
+        self.serial_communicator.send(
+            SerialProtocol.MessageType.configure,
+            SerialProtocol.Configuration(pixel_type=pixel_type)
         )
 
     @staticmethod

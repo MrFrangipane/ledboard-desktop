@@ -1,8 +1,11 @@
+import logging
 import dataclasses
 import serial
 import struct
 
 from .protocol import SerialProtocol
+
+_logger = logging.getLogger(__name__)
 
 
 class SerialCommunicator:
@@ -33,6 +36,7 @@ class SerialCommunicator:
 
     def send(self, message_type, message_data):
         if not self._is_open:
+            _logger.info(f"Attempting to send while port not open, {message_type}")
             return
 
         packed = self._pack(message_data)

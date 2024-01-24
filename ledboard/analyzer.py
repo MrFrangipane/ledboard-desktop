@@ -115,3 +115,8 @@ class Analyzer:
 
     def set_led_board_port(self, port_name):
         self._led_board.set_serial_port_name(port_name)
+
+    def set_pixel_type(self, pixel_type: int):
+        self._led_board.connect()
+        self._led_board.configure(pixel_type)
+        self._led_board.disconnect()
