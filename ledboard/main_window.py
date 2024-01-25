@@ -184,17 +184,20 @@ class MainWindow(QMainWindow):
 
             # TODO create a class to manage locators
             if current_led_index not in self._items_locators and current_led_index > 0:
-                x = self._analyzer.locators[current_led_index][0] - self._locator_radius / 2
-                y = self._analyzer.locators[current_led_index][1] - self._locator_radius / 2
-                rect = QGraphicsRectItem(QRectF(x, y, self._locator_radius, self._locator_radius))
-                rect.setPen(QPen(QColor.fromRgb(255, 0, 0)))
-                self._items_locators[current_led_index] = rect
-                self.scene.addItem(rect)
+                self._place_locator(current_led_index)
 
             self.progress.setValue(current_led_index - self._analyzer.led_start)
 
         self.progress.setValue(0)
         self.button_scan.setText("Scan...")
+
+    def _place_locator(self, led_index):
+        x = self._analyzer.locators[led_index][0] - self._locator_radius / 2
+        y = self._analyzer.locators[led_index][1] - self._locator_radius / 2
+        rect = QGraphicsRectItem(QRectF(x, y, self._locator_radius, self._locator_radius))
+        rect.setPen(QPen(QColor.fromRgb(255, 0, 0)))
+        self._items_locators[led_index] = rect
+        self.scene.addItem(rect)
 
     def button_scan_clicked(self):
         if not self._analyzer.is_working:
