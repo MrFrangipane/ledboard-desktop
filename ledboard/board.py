@@ -26,14 +26,23 @@ class LedBoard:
             )
         )
 
-    def configure(self, pixel_type: int, pixel_count: int):
+    def configure(self, pixel_type: int, pixel_count: int, id_: str = "12345678"):
         self.serial_communicator.send(
-            SerialProtocol.MessageType.configure,
+            SerialProtocol.Direction.Send,
+            SerialProtocol.DataTypeCode.configuration,
             SerialProtocol.Configuration(
                 pixel_type=pixel_type,
-                pixel_count=pixel_count
+                pixel_count=pixel_count,
+                board_id=id_.encode('ascii')
             )
         )
+
+    def get_configuration(self) -> SerialProtocol.Configuration:
+        self.serial_communicator.send(
+            SerialProtocol.Direction.Receive,
+            SerialProtocol.DataTypeCode.configuration
+        )
+        return self.serial_communicator.receive()
 
     @staticmethod
     def get_serial_port_names():
@@ -41,3 +50,32 @@ class LedBoard:
 
     def set_serial_port_name(self, name):
         self.serial_communicator.set_port_name(name)
+
+
+if __name__ == "__main__":
+    import time
+    import logging
+    import serial
+    logging.basicConfig(level=logging.INFO)
+
+    board = LedBoard()
+
+    logging.info("== Ports ==")
+    ports = board.get_serial_port_names()
+    logging.info(f"{ports}, using {ports[-1]}")
+    board.set_serial_port_name(ports[-1])
+
+    board.connect()
+    while True:
+        try:
+            time.sleep(1)
+            logging.info("-- Get configuration --")
+            logging.info(board.get_configuration())
+            time.sleep(1)
+            logging.info("-- Set configuration --")
+            logging.info(board.configure(0, 20))
+        except KeyboardInterrupt:
+            break
+        except serial.serialutil.SerialException:
+            continue
+    board.disconnect()

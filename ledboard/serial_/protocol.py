@@ -6,37 +6,36 @@ class SerialProtocol:
     Message topology
 
     ```
-    |   0   |       1      | 2 | 3 | 4 | 5 |   n  | 6 + n |
-    | begin | message type |   data size   | data |  end  |
-    |-------|           header             | data |-------|
+    |   0   |    1      |     2     |   n  | 3 + n |
+    | begin | direction | data type | data |  end  |
+    |-------| ------ header ------- | data |-------|
     ```
     """
-    class MessageType:
-        illuminate = 0x41               # "A"
-        configure = 0x42                # "B"
+    class Direction:
+        Send = 0
+        Receive = 1
 
-    @dataclass
-    class IlluminatedLed:
-        led_index: int = 0
-        r: int = 0
-        g: int = 0
-        b: int = 0
-        w: int = 0
+    header_size = 2
+    flag_begin = 0x3c   # "<"
+    flag_end = 0x3e     # ">"
+
+    # -------------------------------------- #
 
     class PixelType:
         RGB = 0
         RGBW = 1
 
+    class DataTypeCode:
+        configuration = 0x41
+        illumination = 0x42
+
     @dataclass
     class Configuration:
         pixel_type: int = 0
         pixel_count: int = 60
+        board_id: bytes = bytes([0, 0, 0, 0, 0, 0, 0, 0])
+        ip_address: bytes = bytes([0, 0, 0, 0])
 
-    message_type_to_data_type = {
-        MessageType.illuminate: IlluminatedLed,
-        MessageType.configure: Configuration
+    data_type_code_to_type = {
+        DataTypeCode.configuration: Configuration
     }
-
-    header_size = 5
-    flag_begin = 0x3c   # "<"
-    flag_end = 0x3e     # ">"

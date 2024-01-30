@@ -1,4 +1,5 @@
 import json
+import logging
 
 import cv2
 from PySide6.QtCore import QThread
@@ -6,6 +7,9 @@ from PySide6.QtWidgets import QApplication
 
 from ledboard.camera import Camera
 from ledboard.board import LedBoard
+
+
+_logger = logging.getLogger(__name__)
 
 
 class Analyzer:
@@ -61,11 +65,11 @@ class Analyzer:
 
         image = self.capture_blurred_image()
         maximum_value, maximum_location = self._compare_with_background(image)
-        print(f"wait for light on {maximum_value}")
+        _logger.info(f"wait for light on {maximum_value}")
         while maximum_value < self.comparison_light_on_threshold and self.is_working:
             image = self.capture_blurred_image()
             maximum_value, maximum_location = self._compare_with_background(image)
-            print(f"wait for light on {maximum_value}")
+            _logger.info(f"wait for light on {maximum_value}")
             QApplication.processEvents()
 
         return maximum_value, maximum_location
@@ -75,11 +79,11 @@ class Analyzer:
 
         image = self.capture_blurred_image()
         maximum_value, maximum_location = self._compare_with_background(image)
-        print(f"wait for light off {maximum_value}")
+        _logger.info(f"wait for light off {maximum_value}")
         while maximum_value > self.comparison_light_off_threshold and self.is_working:
             image = self.capture_blurred_image()
             maximum_value, maximum_location = self._compare_with_background(image)
-            print(f"wait for light off {maximum_value}")
+            _logger.info(f"wait for light off {maximum_value}")
             QApplication.processEvents()
 
     def _compare_with_background(self, image) -> [int, tuple[int, int]]:
@@ -114,7 +118,7 @@ class Analyzer:
         self._camera.open(index)
 
     def set_led_board_port(self, port_name):
-        print(f"Set port {port_name}")
+        _logger.info(f"Set port {port_name}")
         self._led_board.set_serial_port_name(port_name)
 
     def set_configuration(self, pixel_type: int, pixel_count: int):
