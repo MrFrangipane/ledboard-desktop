@@ -8,6 +8,7 @@ from ledboard.serial_.c_header_exporter import CHeaderExporter
 from ledboard.serial_.types import *
 
 
+# FIXME factorize with serializer tests
 @dataclass
 class AllTypes:
     field_string: StringType(10) = StringDefault(10)
@@ -30,9 +31,12 @@ class TestCHeaderExporter(TestCase):
     def setUp(self):
         self.exporter = CHeaderExporter()
 
+        #
+        # Modify each value to ensure default values are used anyways
         self.all_types = AllTypes()
         self.all_types.field_string = "ABCDEFGHIJ"
         self.all_types.field_float = 0.5
+        self.all_types.field_boolean = True
         self.all_types.field_integer = 5
         self.all_types.field_integers = [1, 2, 3]
         self.all_types.field_bytes = b'\x01\x02\x03\x04\x05'
@@ -43,18 +47,19 @@ class TestCHeaderExporter(TestCase):
 
         self._all_types_as_c_header = """
 struct AllTypes {
-    char fieldString[20] = "ABCDEFGHIJ";
-    float fieldFloat = 0.5;
-    int fieldInteger = 5;
-    int fieldIntegers[3] = {1, 2, 3};
-    byte fieldBytes[5] = {0x01, 0x02, 0x03, 0x04, 0x05};
+    char fieldString[10] = "          ";
+    float fieldFloat = 0.0;
+    bool fieldBoolean = false;
+    int fieldInteger = 0;
+    int fieldIntegers[3] = {0, 0, 0};
+    byte fieldBytes[5] = {0x00, 0x00, 0x00, 0x00, 0x00};
 };
-"""
+""".strip()
 
     def test_export_all_types(self):
         output = self.exporter.export(self.all_types)
 
         self.assertEqual(
-            output,
-            self._all_types_as_c_header
+            self._all_types_as_c_header,
+            output
         )

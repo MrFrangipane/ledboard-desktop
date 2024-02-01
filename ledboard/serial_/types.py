@@ -15,9 +15,10 @@ from typing import Annotated
 
 
 class SerializationAnnotation:
-    def __init__(self, struct_format_token=None, length=1):
+    def __init__(self, c_name=None, struct_format_token=None, length=1):
         self._struct_format_token = struct_format_token
         self.length = length
+        self.c_name = c_name
 
     @property
     def struct_format(self):
@@ -25,23 +26,23 @@ class SerializationAnnotation:
 
 
 def StringType(length):
-    return Annotated[str, SerializationAnnotation(struct_format_token="c", length=length)]
+    return Annotated[str, SerializationAnnotation(c_name="char", struct_format_token="c", length=length)]
 
 
 def IntegerType():
-    return Annotated[int, SerializationAnnotation(struct_format_token="i")]
+    return Annotated[int, SerializationAnnotation(c_name="int", struct_format_token="i")]
 
 
 def FloatType():
-    return Annotated[float, SerializationAnnotation(struct_format_token="f")]
+    return Annotated[float, SerializationAnnotation(c_name="float", struct_format_token="f")]
 
 
 def BooleanType():
-    return Annotated[bool, SerializationAnnotation(struct_format_token="c")]
+    return Annotated[bool, SerializationAnnotation(c_name="bool", struct_format_token="c")]
 
 
 def BytesType(length):
-    return Annotated[bytes, SerializationAnnotation(struct_format_token="c", length=length)]
+    return Annotated[bytes, SerializationAnnotation(c_name="byte", struct_format_token="c", length=length)]
 
 
 def ListType(type_, length):

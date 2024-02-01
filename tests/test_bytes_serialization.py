@@ -9,6 +9,7 @@ from ledboard.serial_.byte_deserializer import ByteDeserializer
 from ledboard.serial_.types import *
 
 
+# FIXME factorize with c header exporter tests
 @dataclass
 class AllTypes:
     string: StringType(10) = StringDefault(10)
@@ -31,6 +32,8 @@ class TestSerializeToBytes(TestCase):
     def setUp(self):
         self.serializer = ByteSerializer()
 
+        #
+        # Modify each value to ensure actual data is serialized (not default values)
         self.all_types = AllTypes()
         self.all_types.string = "ABCDEFGHIJ"
         self.all_types.float = 0.5
