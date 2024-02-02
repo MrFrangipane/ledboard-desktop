@@ -31,7 +31,7 @@ class MainWindow(QMainWindow):
         self._combo_cameras.addItems(Camera.get_camera_names())
 
         self._combo_serial_ports = QComboBox()
-        self._combo_serial_ports.addItems(LedBoard.get_serial_port_names())
+        self._combo_serial_ports.addItems(LedBoard.available_serial_port_names())
 
         self._combo_cameras.currentIndexChanged.connect(self._combo_cameras_changed)
         self._combo_serial_ports.currentIndexChanged.connect(self._combo_serial_port_changed)

@@ -1,6 +1,7 @@
 imageio
 imageio-ffmpeg
 opencv-python
+pyserial
 PySide6
 pyside6-helpers
-pyserial
+python-arduino-serial @ git@github.com:MrFrangipane/python-arduino-serial.git@main
