@@ -50,13 +50,22 @@ if __name__ == "__main__":
 
         board.set_serial_port_name("COM15")
 
+        #
+        # CONFIGURE
         settings = BoardSettings(
             name="Demo",
-            ip_address=bytes([192, 168, 20, 201])
+            ip_address=bytes([192, 168, 1, 203]),
+            # do_reboot_bootloader=True,
+            do_save_and_reboot=False,
+            pixel_per_universe=150
         )
         logging.info(f"Sending settings: {settings}")
         board.configure(settings)
+
         time.sleep(1)
 
+        #
+        # GET CONFIGURATION
         settings = board.get_configuration()
         logging.info(f"Received settings: {settings}")
+        print(".".join([str(int(b)) for b in settings.ip_address]))
