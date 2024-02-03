@@ -29,18 +29,6 @@ if __name__ == "__main__":
 
     logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
 
-    if "--export-header" in sys.argv:
-        header_filepath = "E:/PROJECTS_2024/rp2040-led-board/firmware/platformio/include/SerialProtocol.h"
-        from pythonarduinoserial.c_header_exporter import CHeaderExporter
-
-        c_header_exporter = CHeaderExporter(
-            struct_types=all_structs,
-            namespace="Frangitron",
-            include_guard_name="PLATFORMIO_SERIALPROTOCOL_H"
-        )
-        with open(header_filepath, "w+") as c_header_file:
-            c_header_file.write(c_header_exporter.export())
-
     if "--test-communication" in sys.argv:
         board = LedBoard()
 
